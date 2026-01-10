@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Test de Personalidad</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#121a2b;
+      --line:rgba(255,255,255,.10);
+      --text:rgba(255,255,255,.92);
+      --muted:rgba(255,255,255,.70);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    body{margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,#0b1220,#070b13); color:var(--text);}
+    .wrap{max-width:900px; margin:0 auto; padding:28px 16px 80px;}
+    h1{margin:0 0 10px; letter-spacing:.5px;}
+    .card{background:rgba(18,26,43,.92); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:18px;}
+    .muted{color:var(--muted)}
+    .q{margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
+    .q:first-of-type{border-top:none; padding-top:0;}
+    .qhead{display:flex; gap:12px; align-items:baseline;}
+    .qnum{font-weight:900; color:var(--muted); min-width:32px;}
+    .opts{display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;}
+    @media (max-width:720px){ .opts{grid-template-columns:1fr;} }
+    label.opt{display:flex; align-items:center; gap:10px; padding:14px; border-radius:14px; border:1px solid var(--line); background:rgba(255,255,255,0.02); cursor:pointer;}
+    label.opt:hover{background:rgba(255,255,255,0.04);}
+    input[type="radio"]{transform:scale(1.05);}
+
+    .actions{display:flex; gap:12px; margin-top:18px; flex-wrap:wrap;}
+    button{
+      border:none; border-radius:14px; padding:12px 14px;
+      font-weight:900; cursor:pointer;
+      background:rgba(255,255,255,0.10); color:var(--text);
+      border:1px solid var(--line);
+    }
+    button.primary{background:#fff; color:#111827; border-color:transparent;}
+    button:disabled{opacity:.5; cursor:not-allowed;}
+
+    /* Resultados */
+    #result{display:none; margin-top:18px;}
+    .donutWrap{display:flex; justify-content:center; padding:10px 0 16px;}
+    .donutBox{position:relative; display:inline-block;}
+    .tooltip{
+      position:absolute;
+      padding:8px 10px;
+      background:rgba(0,0,0,.78);
+      color:white;
+      border-radius:10px;
+      font-weight:800;
+      font-size:13px;
+      pointer-events:none;
+      transform:translate(-50%,-120%);
+      white-space:nowrap;
+    }
+    .bigBanner{
+      margin:10px 0 14px;
+      padding:14px 16px;
+      border-radius:12px;
+      color:white;
+      font-weight:900;
+      font-size:18px;
+    }
+    .twoCol{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    @media (max-width:720px){ .twoCol{grid-template-columns:1fr;} }
+    .subhead{font-weight:900; color:var(--muted); margin:10px 0;}
+    .list{margin:0; padding-left:18px; line-height:1.45;}
+    .list li{margin:7px 0;}
+    .fourPack{margin-top:14px; padding-top:10px; border-top:1px solid var(--line);}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>TEST DE PERSONALIDAD</h1>
+
+    <div class="card">
+      <div class="muted" style="font-weight:900; margin-bottom:6px;">Instrucciones</div>
+      <div class="muted">
+        Piensa en las palabras, en lo que significan y no en lo que te gustaría.
+        Realmente piensa cuál se asemeja más a ti o con cuál te sientes más identificado.
+      </div>
+
+      <div id="quiz"></div>
+
+      <div class="actions">
+        <button class="primary" id="btnResult" disabled>Ver resultados</button>
+        <button id="btnReset">Reiniciar</button>
+      </div>
+      <div class="muted" id="progress" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card" id="result">
+      <h2 style="margin:0 0 8px;">Mis resultados:</h2>
+
+      <div class="donutWrap">
+        <div class="donutBox" id="donutBox">
+          <svg id="donut" viewBox="0 0 200 200" width="260" height="260" aria-label="Gráfica de resultados">
+            <g transform="rotate(-90 100 100)" id="donutSegs"></g>
+            <circle cx="100" cy="100" r="52" fill="white"></circle>
+          </svg>
+          <div class="tooltip" id="tip" style="display:none;"></div>
+        </div>
+      </div>
+
+      <div class="bigBanner" id="bigBanner">Eres —</div>
+
+      <div class="twoCol">
+        <div>
+          <div class="subhead">Material recomendado</div>
+          <ul class="list" id="materialList"></ul>
+        </div>
+        <div>
+          <div class="subhead">Características de personalidad</div>
+          <ul class="list" id="traitsList"></ul>
+        </div>
+      </div>
+
+      <div class="fourPack">
+        <div class="subhead">Claves</div>
+        <ul class="list" id="keysList"></ul>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =========================
+   1) EDITA SOLO ESTA PARTE
+   ========================= */
+
+const PROFILE = {
+  Amarillo: {
+    material: ["(Pon aquí tu material recomendado para Amarillo)"],
+    traits: [
+      "Directo, dominante, retador",
+      "Busca control y resultados",
+      "Impaciente ante la lentitud"
+    ],
+    keys: [
+      "Motivador: poder y control",
+      "Miedo básico: perder / fallar",
+      "Valor: fuerza de ventas y cierre",
+      "Dark side: autoritario si se estresa"
+    ]
+  },
+  Rojo: {
+    material: ["(Pon aquí tu material recomendado para Rojo)"],
+    traits: [
+      "Sociable y carismático",
+      "Creativo, expresivo, bromista",
+      "Puede ser disperso o desorganizado"
+    ],
+    keys: [
+      "Motivador: reconocimiento",
+      "Miedo básico: rechazo",
+      "Valor: apertura y conexión humana",
+      "Dark side: dramático cuando no lo validan 😈"
+    ]
+  },
+  Azul: {
+    material: ["(Pon aquí tu material recomendado para Azul)"],
+    traits: [
+      "Sensible, leal, buen oyente",
+      "Busca seguridad y estabilidad",
+      "Ritmo lento, reflexivo"
+    ],
+    keys: [
+      "Motivador: status quo / seguridad",
+      "Miedo básico: cambios",
+      "Valor: soporte y estabilidad",
+      "Dark side: se aflige y evita cambios"
+    ]
+  },
+  Verde: {
+    material: ["(Pon aquí tu material recomendado para Verde)"],
+    traits: [
+      "Metódico, organizado, puntual",
+      "Orientado a evidencias",
+      "Sistemático y disciplinado"
+    ],
+    keys: [
+      "Motivador: reglas y procesos",
+      "Miedo básico: conflicto",
+      "Valor: orden y precisión",
+      "Dark side: crítico y rígido"
+    ]
+  }
+};
+
+const QUESTIONS = [
+  q(1,  opt("Osado","Amarillo"), opt("Platicador","Rojo"), opt("Solitario","Azul"), opt("Disciplinado","Verde")),
+  q(2,  opt("Impaciente","Amarillo"), opt("Exagerado","Rojo"), opt("Cedes","Azul"), opt("Inexpresivo","Verde")),
+  q(3,  opt("Terco","Amarillo"), opt("Dejas a medias","Rojo"), opt("Miedoso","Azul"), opt("Dudas","Verde")),
+  q(4,  opt("Diriges","Amarillo"), opt("Expresivo","Rojo"), opt("__AZUL_FILA_4__","Azul"), opt("Reservado","Verde")),
+  q(5,  opt("Manipulador","Amarillo"), opt("Desordenado","Rojo"), opt("Tono de voz bajo","Azul"), opt("Enojón","Verde")),
+  q(6,  opt("Enérgico","Amarillo"), opt("Persuasivo","Rojo"), opt("Empático","Azul"), opt("Fiel","Verde")),
+  q(7,  opt("Interrumpes","Amarillo"), opt("Indisciplinado","Rojo"), opt("Apático","Azul"), opt("Rencoroso","Verde")),
+  q(8,  opt("Obstinado","Amarillo"), opt("Exhibicionista","Rojo"), opt("Lento","Azul"), opt("Escéptico","Verde")),
+  q(9,  opt("Orgulloso","Amarillo"), opt("Distraído","Rojo"), opt("Permisivo","Azul"), opt("Pesimista","Verde")),
+  q(10, opt("Dominante","Amarillo"), opt("Flojo","Rojo"), opt("Desorganizado","Azul"), opt("Dudoso","Verde")),
+  q(11, opt("Directo","Amarillo"), opt("Alegre","Rojo"), opt("Ayudas","Azul"), opt("Cauteloso","Verde")),
+  q(12, opt("Brusco","Amarillo"), opt("Olvidadizo","Rojo"), opt("Sumiso","Azul"), opt("Antisocial","Verde")),
+  q(13, opt("No sabes perder","Amarillo"), opt("Procrastinas","Rojo"), opt("Voluble","Azul"), opt("Criticón","Verde")),
+  q(14, opt("Seguro de sí mismo","Amarillo"), opt("Espontaneo","Rojo"), opt("Cuida a los demás","Azul"), opt("Organizado","Verde")),
+  q(15, opt("Super líder","Amarillo"), opt("Popular","Rojo"), opt("Agradable","Azul"), opt("Sistemático","Verde")),
+  q(16, opt("Necio","Amarillo"), opt("Desatento","Rojo"), opt("Inocente","Azul"), opt("Negativo","Verde")),
+  q(17, opt("Intolerante","Amarillo"), opt("Inconsistente","Rojo"), opt("Introvertido","Azul"), opt("Indiferente","Verde")),
+  q(18, opt("Aventurero","Amarillo"), opt("Expresivo","Rojo"), opt("Adaptable","Azul"), opt("Analítico","Verde")),
+  q(19, opt("__AMARILLO_FILA_19__","Amarillo"), opt("Positivo","Rojo"), opt("Paciente","Azul"), opt("Planificador","Verde")),
+  q(20, opt("Determinado","Amarillo"), opt("Bromista","Rojo"), opt("Sereno","Azul"), opt("Puntual","Verde")),
+  q(21, opt("Mandón","Amarillo"), opt("Penoso","Rojo"), opt("Melancólico","Azul"), opt("Superficial","Verde")),
+  q(22, opt("Aferrado","Amarillo"), opt("Distraído","Rojo"), opt("Temeroso","Azul"), opt("Resentido","Verde")),
+  q(23, opt("Tomas el control","Amarillo"), opt("__ROJO_FILA_23__","Rojo"), opt("Hospitalario","Azul"), opt("Humor Seco","Verde")),
+  q(24, opt("Gritón","Amarillo"), opt("Seguidor","Rojo"), opt("Solitario","Azul"), opt("Autoritario","Verde")),
+  q(25, opt("Hacedor","Amarillo"), opt("Sociable","Rojo"), opt("Mediador","Azul"), opt("Consistente","Verde")),
+  q(26, opt("Decidido","Amarillo"), opt("Entusiasta","Rojo"), opt("Introvertido","Azul"), opt("Preciso","Verde")),
+  q(27, opt("Desafiante","Amarillo"), opt("Positivo","Rojo"), opt("Paciente","Azul"), opt("Planificador","Verde")),
+  q(28, opt("Tenaz","Amarillo"), opt("Interactúas","Rojo"), opt("Tolerante","Azul"), opt("Diplomático","Verde")),
+  q(29, opt("Adicto al trabajo","Amarillo"), opt("Busco reconocimiento","Rojo"), opt("Te resistes al cambio","Azul"), opt("Calculador","Verde")),
+  q(30, opt("Vengativo","Amarillo"), opt("Impuntual","Rojo"), opt("Ermitaño","Azul"), opt("Inflexible","Verde")),
+  q(31, opt("Determinante","Amarillo"), opt("Vivaz","Rojo"), opt("Sabes escuchar","Azul"), opt("Perfeccionista","Verde")),
+  q(32, opt("Proactivo","Amarillo"), opt("Idealista","Rojo"), opt("Sensible","Azul"), opt("Metódico","Verde")),
+  q(33, opt("Competitivo","Amarillo"), opt("Confías","Rojo"), opt("Considerado","Azul"), opt("Artista","Verde")),
+  q(34, opt("Firme","Amarillo"), opt("Inspirador","Rojo"), opt("Cálido","Azul"), opt("Piensas mucho","Verde")),
+  q(35, opt("Directo","Amarillo"), opt("Creativo","Rojo"), opt("Sensible","Azul"), opt("Introvertido","Verde")),
+  q(36, opt("Violento","Amarillo"), opt("Iracundo","Rojo"), opt("Lento","Azul"), opt("Impersonal","Verde")),
+  q(37, opt("Asertivo","Amarillo"), opt("Feliz","Rojo"), opt("Tranquilo","Azul"), opt("Conservador","Verde")),
+  q(38, opt("Posesivo","Amarillo"), opt("Atrabancado","Rojo"), opt("Sacrificado","Azul"), opt("Intrusivo","Verde")),
+  q(39, opt("Duro","Amarillo"), opt("Enérgico","Rojo"), opt("Observador","Azul"), opt("Dudoso","Verde")),
+  q(40, opt("Implacable","Amarillo"), opt("Dramático","Rojo"), opt("Susceptible","Azul"), opt("Meticuloso","Verde")),
+];
+
+/* =========================
+   2) NO TOQUES ESTO (funciona solo)
+   ========================= */
+
+const COLOR_HEX = { Amarillo:"#f59e0b", Rojo:"#ef4444", Azul:"#3b82f6", Verde:"#22c55e" };
+
+function q(id, ...options){ return { id, options }; }
+function opt(text,color){ return { text, color }; }
+
+const quizEl = document.getElementById("quiz");
+const btnResult = document.getElementById("btnResult");
+const btnReset  = document.getElementById("btnReset");
+const progress  = document.getElementById("progress");
+
+let answers = {}; // {qid: color}
+
+buildQuiz();
+updateProgress();
+
+btnResult.addEventListener("click", () => {
+  const {counts, perc, dominant} = calc();
+  renderDonut(counts);
+  setProfile(dominant, counts, perc);
+  document.getElementById("result").style.display = "block";
+  document.getElementById("result").scrollIntoView({behavior:"smooth", block:"start"});
+});
+
+btnReset.addEventListener("click", () => {
+  answers = {};
+  document.getElementById("result").style.display = "none";
+  buildQuiz();
+  updateProgress();
+  window.scrollTo({top:0, behavior:"smooth"});
+});
+
+function buildQuiz(){
+  quizEl.innerHTML = "";
+
+  QUESTIONS.forEach(q => {
+    const wrap = document.createElement("div");
+    wrap.className = "q";
+
+    wrap.innerHTML = `
+      <div class="qhead">
+        <div class="qnum">${q.id}.</div>
+        <div class="muted">Elige la palabra que más te describe hoy</div>
+      </div>
+      <div class="opts" id="opts-${q.id}"></div>
+    `;
+
+    const optsEl = wrap.querySelector(`#opts-${q.id}`);
+
+    // REVUELVE las opciones para que no se note el patrón
+    const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+
+    shuffled.forEach((op, idx) => {
+      const name = `q_${q.id}`;
+      const id = `q_${q.id}_${idx}`;
+
+      const lab = document.createElement("label");
+      lab.className = "opt";
+      lab.innerHTML = `
+        <input type="radio" name="${name}" id="${id}" />
+        <div>${escapeHtml(op.text)}</div>
+      `;
+
+      const input = lab.querySelector("input");
+      input.addEventListener("change", () => {
+        answers[q.id] = op.color;
+        updateProgress();
+      });
+
+      // Mantener marcado si ya había respuesta
+      if(answers[q.id] === op.color){
+        input.checked = true;
+      }
+
+      optsEl.appendChild(lab);
+    });
+
+    quizEl.appendChild(wrap);
+  });
+}
+
+function updateProgress(){
+  const total = QUESTIONS.length;
+  const answered = Object.keys(answers).length;
+  progress.textContent = `Respondidas: ${answered} / ${total}`;
+  btnResult.disabled = answered !== total;
+}
+
+function calc(){
+  const counts = {Rojo:0, Amarillo:0, Azul:0, Verde:0};
+  QUESTIONS.forEach(q => {
+    const c = answers[q.id];
+    if(c) counts[c] += 1;
+  });
+
+  const total = QUESTIONS.length;
+  const perc = {};
+  Object.keys(counts).forEach(k => perc[k] = Math.round((counts[k]/total)*100));
+
+  const dominant = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0] || "Verde";
+  return {counts, perc, dominant};
+}
+
+/* ======= Dona clickeable + tooltip ======= */
+function renderDonut(counts){
+  const total = Object.values(counts).reduce((a,b)=>a+b,0) || 1;
+  const segs = document.getElementById("donemaybe"); // (no existe) evita error accidental
+  const g = document.getElementById("donutSegs");
+  g.innerHTML = "";
+
+  const r = 70, cx = 100, cy = 100, strokeW = 26;
+  const C = 2 * Math.PI * r;
+  let offset = 0;
+
+  const order = ["Azul","Amarillo","Rojo","Verde"];
+
+  order.forEach(color => {
+    const v = counts[color] || 0;
+    const len = (v/total) * C;
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+    circle.setAttribute("cx", cx);
+    circle.setAttribute("cy", cy);
+    circle.setAttribute("r", r);
+    circle.setAttribute("fill", "none");
+    circle.setAttribute("stroke", COLOR_HEX[color]);
+    circle.setAttribute("stroke-width", strokeW);
+    circle.setAttribute("stroke-dasharray", `${len} ${C-len}`);
+    circle.setAttribute("stroke-dashoffset", `${-offset}`);
+    circle.style.cursor = "pointer";
+    circle.style.opacity = len === 0 ? "0.12" : "1";
+
+    circle.addEventListener("mousemove", (e) => {
+      const tip = document.getElementById("tip");
+      tip.style.display = "block";
+      tip.textContent = `${color}: ${v}`;
+      const box = document.getElementById("donutBox").getBoundingClientRect();
+      tip.style.left = (e.clientX - box.left) + "px";
+      tip.style.top = (e.clientY - box.top) + "px";
+    });
+    circle.addEventListener("mouseleave", () => {
+      document.getElementById("tip").style.display = "none";
+    });
+
+    // Click: cambiar el panel al color tocado (como tu screenshot)
+    circle.addEventListener("click", () => {
+      const {counts, perc} = calc();
+      setProfile(color, counts, perc);
+    });
+
+    g.appendChild(circle);
+    offset += len;
+  });
+}
+
+function setProfile(color, counts, perc){
+  const banner = document.getElementById("bigBanner");
+  banner.textContent = `Eres ${color}`;
+  banner.style.background = COLOR_HEX[color];
+
+  const mat = document.getElementById("materialList");
+  const traits = document.getElementById("traitsList");
+  const keys = document.getElementById("keysList");
+
+  mat.innerHTML = "";
+  traits.innerHTML = "";
+  keys.innerHTML = "";
+
+  (PROFILE[color]?.material || []).forEach(x => addLi(mat, x));
+  (PROFILE[color]?.traits || []).forEach(x => addLi(traits, x));
+  (PROFILE[color]?.keys || []).forEach(x => addLi(keys, x));
+}
+
+function addLi(ul, text){
+  const li = document.createElement("li");
+  li.textContent = text;
+  ul.appendChild(li);
+}
+
+function escapeHtml(s){
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+</script>
+</body>
+</html>
